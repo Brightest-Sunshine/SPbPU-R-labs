@@ -7,8 +7,8 @@ merge_dataframes <- function(dataframes){
 
 get_id <- function(dataframes){
   new_dataframe <- merge_dataframes(dataframes)
-  fix_dataframe <- new_dataframe[, -1]
-  means <- rowMeans(fix_dataframe)
+  dataframe_without_id <- new_dataframe[, -1]
+  means <- rowMeans(dataframe_without_id)
   result <- data.frame(id=new_dataframe$id, mean_temp=means)
   return(result)
 }
