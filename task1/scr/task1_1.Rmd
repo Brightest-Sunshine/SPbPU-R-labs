@@ -1,0 +1,55 @@
+---
+title: "Задание 1.1"
+author: "Мамаева Анастасия"
+date: "09/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+***
+Указываем путь до файла, с которым будем работать:
+```{r warning=FALSE}
+path = 'D:/test_data.csv'
+```
+***
+Функция, считывающая данные из файла, с которыми будем работать:
+```{r warning=FALSE}
+read_dataframe <- function(path) {
+  dataframe <- read.csv(path)
+  return(dataframe)
+}
+```
+***
+Функция, которая создает новую измененную колонку, на основе имеющейся. В новой колонке удаляем пробел, далее преобразуем её в числовой формат. Если в полученной колонке, после данного преобразования, имеется хотя бы одно значение **NA**, то перед нами был столбец строк, и пробел в ней удалять не надо, иначе возвращаем преобразованный столбец:
+```{r warning=FALSE}
+fix_column <- function(column){
+  new_column <- sub(' ', '', column)
+  new_column <- as.numeric(new_column)
+  if(any(is.na(new_column))){
+    return(column)
+  }
+  return(new_column)
+}
+```
+***
+Функция, вызывающая **fix_column** поочередно для каждого столбца. Возвращает преобразованную таблицу:
+```{r warning=FALSE}
+fix_data <- function(dataframe){
+  fix_dataframe <- lapply(dataframe, fix_column)
+  fix_dataframe <- data.frame(fix_dataframe)
+  return(fix_dataframe)
+}
+```
+***
+Служебная функция, имитирующая точку входа в программу. В ней считываем данные из .csv файла, получаем результирующую таблицу, требуемую в задании, печатает ответ на экран:
+```{r warning=FALSE}
+main <- function(){
+  dataframe <- read_dataframe(path)
+  fix_dataframe <- fix_data(dataframe)
+  print(fix_dataframe)
+}
+
+main()
+```
