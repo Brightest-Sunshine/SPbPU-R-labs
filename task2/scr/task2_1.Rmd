@@ -1,0 +1,193 @@
+---
+title: "Задание 2.1"
+author: "Мамаева Анастасия"
+date: "09/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Для поставленной задачи я продемонстрирую два варианта решения. В процессе написания работы использовались два разных подхода: реализация алгоритма нахождения дня недели по дате вручную и с применением встроенной функции **weekdays()**
+
+## Первый вариант решения
+
+Указываем путь до файла, с которым будем работать:
+```{r warning=FALSE}
+path = 'D:/RH_T.csv'
+```
+***
+Функция, считывающая данные из файла, с которыми будем работать:
+```{r warning=FALSE}
+read_dataframe <- function(path) {
+  dataframe <- read.csv(path)
+  return(dataframe)
+}
+```
+***
+Функция, позволяющая выбрать нужные колонки для работы из имеющегося датафрейма:
+```{r warning=FALSE}
+select_necessary_columns <- function(dataframe){
+  new_dataframe <-  dataframe[, c('YEAR', 'MM', 'DD', 'YYYYMMDD', 'T2M')]
+  return(new_dataframe)
+}
+```
+***
+Для определения дня недели по дате нужно использовать формулу:
+$$день~недели~=(день~+~код~месяца~+~код~года)~\%~7$$
+Коды месяца и года - это, пожалуй, самое трудное в формуле. Коды месяца надо запомнить:
+
+* январь, октябрь - 1  
+* май - 2
+* август - 3
+* февраль, март, ноябрь - 4
+* июнь - 5
+* декабрь, сентябрь - 6
+* апрель, июль - 7
+
+В соответствии с этими кодами изменим нумерацию месяцев в нашем датафрейме:
+```{r warning=FALSE}
+change_month_code <- function(dataframe){
+  old <- 1:12
+  new <- c(1, 4, 4, 0, 2, 5, 0, 3, 6, 1, 4, 6)
+  dataframe$MM[dataframe$MM %in% old] <-new[match(dataframe$MM, old, nomatch = 0)]
+  return(dataframe)
+}
+```
+***
+Код года в XXI веке рассчитывается по формуле:
+$$код~года~=~(6~+~последние~две~цифры~года~+~последние~две~цифры~года~/~4)~ \%~7$$
+Реализуем данную функцию:
+```{r warning=FALSE}
+change_years_code <- function(dataframe){
+  old <- c(2020, 2021)
+  code_for_2020 <- (6 + (2020 %% 100) + ((2020 %% 100) %/% 4)) %% 7
+  code_for_2021 <- (6 + (2021 %% 100) + ((2021 %% 100) %/% 4)) %% 7
+  new <- c(code_for_2020, code_for_2021)
+  dataframe$YEAR[dataframe$YEAR %in% old] <-new[match(dataframe$YEAR, old, nomatch = 0)]
+  return(dataframe)
+}
+```
+***
+Вычислим коды дней, соответсвующих датам. Однако будем помнить, что формула не совсем верно работает для високосного года (коим является 2020) вплоть до 29.02.2020, в связи с этим в формуле надо отнимать еще единицу. В следствие с этой поправкой реализуем необходимую функцию:
+```{r warning=FALSE}
+solve_day_of_week <- function(string){
+  if(string[[4]] >= '2020-01-01' & string[[4]] <= '2020-02-29'){
+    day_of_week <- ((as.numeric(string[[3]]) + as.numeric(string[[2]]) + as.numeric(string[[1]])- as.numeric(1)) %% 7) 
+    if (day_of_week == -1){
+      day_of_week <- 6
+    }
+  }
+  else
+    day_of_week <- (as.numeric(string[[3]]) + as.numeric(string[[2]]) + as.numeric(string[[1]])) %% 7
+  return(day_of_week)
+}
+```
+***
+Добавим в датафрейм новую колонку с посчитанными кодами дней:
+```{r warning=FALSE}
+add_day_of_week <- function(dataframe){
+  NameDay <- apply(dataframe, 1, solve_day_of_week)
+  dataframe$NameDay <- NameDay
+  return(dataframe)
+}
+```
+***
+Условимся обозначать дни недели следующими кодами:
+
+* воскресенье - 1
+* понедельник - 2
+* вторник - 3
+* среда - 4
+* четверг - 5
+* пятница - 6
+* суббота - 7
+
+Создадим два новых датафрейма на основе уже имеющегося, которые будут состоять исключительно из сред и четвергов:
+```{r warning=FALSE}
+select_all_wednesdays <- function(dataframe){
+  df_of_wednesdays <- dataframe[which (dataframe$NameDay == 4),]
+  return(df_of_wednesdays)
+}
+
+select_all_thursday <- function(dataframe){
+  df_of_thursdays <- dataframe[which (dataframe$NameDay == 5), ]
+  return(df_of_thursdays)
+}
+```
+***
+Найдём самую низкую температуру в среду и самую высокую в четверг:
+```{r warning=FALSE}
+find_min_temp <- function(dataframe){
+  index <- which.min(dataframe[,5])
+  cat("Самая холодная среда была", dataframe[index, 4],"средняя температура равнялась", dataframe[index, 5],'\n')
+}
+
+find_max_temp <- function(dataframe){
+  index <- which.max(dataframe[,5])
+  cat("Самый тёплый четверг был", dataframe[index, 4], "средняя температура равнялась", dataframe[index, 5])
+}
+```
+***
+Данная функция является служебной, так называемая точка входа в программу, вызывающая все предыдущие в требуемом порядке:
+```{r warning=FALSE}
+main1 <- function(){
+  data <- read_dataframe(path)
+  data <- select_necessary_columns(data)
+  data <- change_month_code(data)
+  data <- change_years_code(data)
+  data <- add_day_of_week(data)
+  wednesdays <- select_all_wednesdays(data)
+  thursdays <- select_all_thursday(data)
+  find_min_temp(wednesdays)
+  find_max_temp(thursdays)
+}
+
+main1()
+```
+
+## Второй вариант решения
+
+Аналогично предыдущему решению, указываем путь до нашего файла и реализуем функцию считывания .csv таблицы:
+```{r warning=FALSE}
+path = 'D:/RH_T.csv'
+
+read_dataframe <- function(path) {
+  dataframe <- read.csv(path)
+  return(dataframe)
+}
+```
+***
+Следующая функция и заменяет огромное полотно формул, имеющихся в предыдущем решении. Здесь вызываем встроенную функцию, которая по полной дате определяет день недели и указывает его в требуемой кодировке (в моём случа была UTF-8). Полученный столбец добавляем в датафрейм:
+```{r warning=FALSE}
+add_dayName <- function(dataframe){
+  col <- weekdays(as.Date(dataframe[, 8]))
+  dataframe$dayName <- col
+  return(dataframe)
+}
+```
+***
+Находим минимальную и максимальную температуру в среду и четверг соответсвенно:
+```{r warning=FALSE}
+find_min_max_temp <- function(dataframe){
+  all_wednesdays <- dataframe[ which (dataframe$dayName == 'среда'),]
+  all_thursdays <- dataframe[ which (dataframe$dayName == 'четверг'),]
+  min_index <- which.min(all_wednesdays[,10])
+  max_index <- which.max(all_thursdays[,10])
+  cat("Самая холодная среда была",  all_wednesdays[min_index, 8],"средняя температура равнялась", all_wednesdays[min_index, 10],'\n')
+  cat("Самый тёплый четверг был", all_thursdays[max_index, 8], "средняя температура равнялась", all_thursdays[max_index, 10])
+}
+```
+***
+Вызываем служебную функцию, являющейся точкой входа для программы:
+```{r warning=FALSE}
+main2 <- function(){
+  data <- read_dataframe(path)
+  new_data <- add_dayName(data)
+  find_min_max_temp(new_data)
+}
+
+main2()
+```
+***
+Сранивая полученные ответы, делаем вывод, что алгоритм поиска дня по дате был реализован корректно, ответы в обоих случах совпали. Однако на практике лучше использовать встроенную функцию **weekdays()**, которая значительно упростила работу.
