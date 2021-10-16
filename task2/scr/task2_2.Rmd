@@ -1,0 +1,42 @@
+---
+title: "Дополнительные задачи"
+author: "Мамаева Анастасия"
+date: "16/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Подключаем специальную библиотеку, которая предоставляет возможность работать с датами:
+```{r warning=FALSE, message=FALSE}
+library("lubridate")
+```
+***
+Функция, которая считает, сколько недель осталось до нового года:
+```{r warning=FALSE}
+solve_weeks <- function(weeks_in_year = 52){
+  today <- today()
+  number_of_week <- week(today)
+  answer <- weeks_in_year - number_of_week
+  cat('До нового года осталось', answer, "недель", '\n')
+}
+```
+***
+функция, которая определяет, является ли год високосным:
+```{r warning=FALSE}
+cheak_for_leap_years <- function(){
+  today <- today()
+  answer <- leap_year(today)
+  if (answer)
+    cat("Год не високосный")
+  else
+    cat("Год високосный")
+}
+```
+*** 
+Вызываем написанные ранее функции, для проверки результата:
+```{r warning=FALSE}
+solve_weeks()
+cheak_for_leap_years()
+```
