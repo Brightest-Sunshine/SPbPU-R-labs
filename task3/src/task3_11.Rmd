@@ -1,0 +1,79 @@
+---
+title: "Задание 3.11"
+author: "Мамаева Анастасия"
+date: "30/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Подключаем графическую библиотеку, с помощью которой будем отрисовывать все графики
+```{r warning=FALSE}
+library(ggplot2)
+```
+***
+Указываем путь до файла, с которым будем работать:
+```{r warning=FALSE}
+path = 'D:/data_tula.csv'
+```
+***
+Функция, считывающая датафрейм:
+```{r warning=FALSE}
+read_dataframe <- function(path) {
+  dataframe <- read.csv(path, sep=";", encoding="UTF-8")
+  return(dataframe)
+}
+```
+***
+Функция, меняющая названия столбцов в датафрейме:
+```{r warning=FALSE}
+change_names <- function(dataframe){
+  colnames(dataframe) <- c("Breeds", "Name_indicator", "Unit", "Value_indicator")
+  return(dataframe)
+}
+```
+***
+Функция, выбирающая из датасета нужные столбцы:
+```{r warning=FALSE}
+select_data <- function(dataframe){
+  new_table <- subset(dataframe, Name_indicator == "Площадь земель, занятых лесными насаждениями (покрытых лесной растительностью), всего")
+  return(new_table)
+}
+```
+***
+Функция, отрисовывающая графики:
+```{r warning=FALSE}
+plot_graphics <- function(dataframe){
+  gg1 <- ggplot(data = dataframe, mapping = aes(x = Breeds, y = Value_indicator, fill = Breeds)) +
+    geom_col() + coord_flip() +
+    xlab("Породы") + ylab("Значение, тыс. га") +
+    ggtitle('Столбчатая диаграмма') + 
+    geom_text(aes(label = Value_indicator), vjust = 0.5, colour = "gray32", fontface = 'bold')
+  
+  gg1 <- gg1 + guides( fill = guide_legend(title = "Породы", override.aes = aes(label = "")))
+  print(gg1)
+  
+  gg2 <- ggplot(data = dataframe, mapping = aes(x = '', y = Value_indicator, fill = Breeds)) +
+    geom_col() + coord_polar(theta = 'y') +
+    ggtitle('Круговая диаграмма')
+  gg2 <- gg2 + guides(fill = guide_legend(title = "Породы", override.aes = aes(label = "")))
+  print(gg2)
+  
+}
+```
+***
+Служебная функция, в которой меняем тип переменной на вещественную и вызываем построение графиков:
+```{r warning=FALSE}
+main <- function(){
+  data <- read_dataframe(path)
+  data <- change_names(data)
+  new_data <- select_data(data)
+  new_data[[4]] <- sub(',', '.', new_data[[4]])
+  new_data[[4]] <- as.numeric(new_data[[4]])
+  plot_graphics(new_data)
+}
+
+main()
+```
