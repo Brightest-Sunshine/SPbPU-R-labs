@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 Подключаем графическую библиотеку, с помощью которой будем отрисовывать все графики
-```{r warning=FALSE}
+```{r warning=FALSE, message=FALSE}
 library(ggplot2)
 library(dplyr)
 ```
@@ -63,50 +63,60 @@ get_share_export <- function(table_trades){
 ***
 Функции отрисовки графиков:
 ```{r warning=FALSE}
-plot_graphics <- function(export_data, leaders){
-   gg1 <- ggplot(export_data, aes(x = partner, y = values, fill = sitc06)) +
+plot_graphic_overall_volume <- function(export_data){
+   gg <-  ggplot(export_data, aes(x = partner, y = values, fill = sitc06)) +
           geom_col(position = "dodge") +
           xlab('Страны-партнеры') + 
           ylab('Объем экспорта') +
           ggtitle('Общий объем экспорта в Европе за 2008-2019 гг') + 
           scale_fill_discrete(name = 'Экспортируемые товары') + 
-          coord_flip()
-   print(gg1)
-   
-   gg2 <- ggplot(leaders, aes(x = partner, y = values, fill = sitc06)) +
+          coord_flip() +
+          theme_bw() + 
+          theme(plot.background = element_rect(fill = "lavender", colour = NA), legend.position=c(.7, .5),                                          legend.background = element_rect(fill="lavender", 
+                                  size=0.5, linetype="solid"))
+   plot(gg)
+}
+ 
+plot_graphic_leading_countries <- function(leaders){
+   gg <-  ggplot(leaders, aes(x = partner, y = values, fill = sitc06)) +
           geom_col(position = "dodge") +
           xlab('Страны-партнеры') + 
           ylab('Объем экспорта') +
           ggtitle('Ведущие страны по экспорту') + 
           scale_fill_discrete(name = 'Экспортируемые товары') + 
-          coord_flip()
-   print(gg2)
+          coord_flip() + 
+          theme_bw() + 
+          theme(plot.background = element_rect(fill = "lavender", colour = NA), legend.position=c(.7, .5),                                          legend.background = element_rect(fill="lavender", 
+                                  size=0.5, linetype="solid"))
+   plot(gg)
 }
 
 
-plot_graphic <- function(export_data, str_){
+plot_graphic_with_shares <- function(export_data, str_){
   gg <- ggplot(export_data, aes(x = partner, y = values, group = sitc06)) + 
         geom_col(aes(fill = sitc06)) +
         xlab('Страны-партнеры') +
         ylab('Объем экспорта') +
-        ggtitle(paste0('Ведущие экспортеры в Европе за ', str_, ' г.')) +
+        ggtitle(paste0('Ведущие страны по экспорту в Европе за ', str_, ' г.')) +
         scale_fill_discrete(name = 'Экспортируемые товары') + coord_flip() +
-        geom_text(aes(label = share), position = position_stack(vjust = 0.5))
-  print(gg)
+        geom_text(aes(label = share), position = position_stack(vjust = 0.5)) +
+        theme_bw() + 
+        theme(plot.background = element_rect(fill = "lavender", colour = NA), legend.position=c(.7, .5),                                          legend.background = element_rect(fill="lavender", 
+                                size=0.5, linetype="solid"))
 }
 ```
 ***
-Реализовываем служебную функцию, в которой создадим переменные и вызовем функции построения графиков:
+Реализовываем служебную функцию: в которой загрузим данные по прописанному ранее пути, смёрджим все датафреймы в один и создадим переменные импорта и экспорта. Отфильтруем ведущих экспортеров Европы, а также укажем доли от числа всех товаров, проделав это для каждого года. Вызовем функции построения графиков:
 ```{r warning=FALSE}
 main <- function(){
   load(path)
   table_trades <- merge_trades(trades)
   import_data <- get_import(table_trades)
   export_data <- get_export(table_trades)
-  union_data <- bind_rows(export_data, import_data)
   leaders <- subset(export_data, export_data$value >= MIN) 
   
-  plot_graphics(export_data, leaders)
+  plot_graphic_overall_volume(export_data)
+  plot_graphic_leading_countries(leaders)
   
   share_export_data <- get_share_export(table_trades)
   share_data <- cbind(export_data, share = share_export_data$values)
@@ -114,7 +124,7 @@ main <- function(){
   lapply(dates, 
          function(date) {
            export_data = subset(share_data, share_data$time == date & share_data$value >= MIN)
-           plot_graphic(export_data, substring(date, 1, 4))
+           plot_graphic_with_shares(export_data, substring(date, 1, 4))
          }
   )
   
@@ -122,5 +132,3 @@ main <- function(){
 
 main()
 ```
-***
-
