@@ -1,0 +1,105 @@
+---
+title: "Интерактивный отчёт ведущих экспортеров в Европе за 2008-2019 года"
+author: "Мамаева Анастасия"
+date: "31/12/2021"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(ggplot2)
+library(dplyr)
+```
+
+```{r warning=FALSE, include=FALSE}
+path = 'D:/trades.RData'
+```
+
+```{r warning=FALSE, include=FALSE}
+export = 'Exports in million of ECU/EURO'
+import = 'Imports in million of ECU/EURO'
+share_export = 'Share of exports by partner (%)'
+MIN = 10000
+```
+
+```{r warning=FALSE, include=FALSE}
+merge_trades <- function(trades) {
+  c = trades[[1]]
+  for (i in 2:length(trades)) {
+    c = mapply(c, c, trades[[i]], SIMPLIFY=FALSE)
+  }
+  return(subset(as.data.frame(c), select = -geo ))
+}
+```
+
+```{r warning=FALSE, include=FALSE}
+get_export <- function(table_trades) {
+  return(table_trades[table_trades$indic_et == export, ])
+}
+```
+
+```{r warning=FALSE, include=FALSE}
+get_import <- function(table_trades) {
+  return(table_trades[table_trades$indic_et == import, ])
+}
+```
+
+```{r warning=FALSE, include=FALSE}
+get_share_export <- function(table_trades){
+  return(table_trades[table_trades$indic_et == share_export, ])
+}
+```
+
+```{r warning=FALSE, include=FALSE}
+
+plot_graphic_with_shares <- function(export_data, str_){
+  gg <- ggplot(export_data, aes(x = partner, y = values, group = sitc06)) + 
+        geom_col(aes(fill = sitc06)) +
+        xlab('Страны-партнеры') +
+        ylab('Объем экспорта') +
+        ggtitle(paste0('Ведущие страны по экспорту в Европе за ', str_, ' г.')) +
+        scale_fill_discrete(name = 'Экспортируемые товары') + coord_flip() +
+        geom_text(aes(label = share), position = position_stack(vjust = 0.5)) +
+        theme_bw()
+  plot(gg)
+}
+```
+
+```{r eruptions, echo=FALSE}
+inputPanel(
+  sliderInput("bw_adjust", label = "Минимальный объем экспорта:",
+              min = 10000, max = 150000, value = 10000, step = 10000),
+  
+  radioButtons("radio", label = "Выберите год",
+               choices = list("2008" = "2008-01-01", 
+                              "2009" = "2009-01-01",
+                              "2010" = "2010-01-01", 
+                              "2011" = "2011-01-01",
+                              "2012" = "2012-01-01",
+                              "2013" = "2013-01-01",
+                              "2014" = "2014-01-01",
+                              "2015" = "2015-01-01",
+                              "2016" = "2016-01-01",
+                              "2017" = "2017-01-01",
+                              "2018" = "2018-01-01",
+                              "2019" = "2013-01-01")
+               )
+)
+
+ load(path)
+ table_trades <- merge_trades(trades)
+ import_data <- get_import(table_trades)
+ export_data <- get_export(table_trades)
+ 
+ renderPlot({
+          share_export_data <- get_share_export(table_trades)
+          share_data <- cbind(export_data, share = share_export_data$values)
+          export_data = subset(share_data, share_data$time == input$radio & share_data$value >= input$bw_adjust)
+          plot_graphic_with_shares(export_data, substring(input$radio, 1, 4))
+             }
+            )
+```
